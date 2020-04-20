@@ -1,41 +1,55 @@
-# build from the forest Docker image
-FROM rigetti/forest:2.17.0
+ARG quilc_version=1.16.1
+ARG qvm_version=1.15.3
+ARG pyquil_version=2.19.0
+ARG BASE_CONTAINER=jupyter/scipy-notebook
 
-# install requirements for latex generation
-RUN apt-get update && apt-get -yq dist-upgrade && \
-    apt-get install --no-install-recommends -yq \
-    ghostscript imagemagick texlive-latex-base texlive-latex-extra && \
+# use multi-stage builds to independently pull dependency versions
+FROM rigetti/quilc:$quilc_version as quilc
+FROM rigetti/qvm:$qvm_version as qvm
+FROM $BASE_CONTAINER
+ARG pyquil_version
+
+# change to root for installation of new packages
+USER root
+
+# install system packages
+# pyquil
+# TeXLive et al for circuit diagram generation
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libblas-dev libffi-dev liblapack-dev libzmq3-dev \
+        ghostscript imagemagick texlive-latex-base texlive-latex-extra \
+    && \
     rm -rf /var/lib/apt/lists/*
 
-# install requirements for running pyQuil tutorial notebooks
-RUN pip install "pyquil[tutorials]"
+# copy over the pre-built quilc binary from the first build stage
+COPY --from=quilc /src/quilc/quilc /usr/local/bin/quilc
+# copy over the pre-built qvm binary from the second build stage
+COPY --from=qvm /src/qvm/qvm /usr/local/bin/qvm
 
-# install jupyter notebook and jupyter lab
-RUN pip install --no-cache-dir notebook==6.0.1 jupyterlab==1.1.4
+# Switch back to the notebook user
+USER $NB_UID
 
-# create user with UID 1000 and associated home dir (required by binder)
-ARG NB_USER=binder
-ARG NB_UID=1000
-ENV USER ${NB_USER}
-ENV NB_UID ${NB_UID}
-ENV HOME /home/${NB_USER}
-RUN adduser --disabled-password \
-    --gecos "Default user" \
-    --uid ${NB_UID} \
-    ${NB_USER}
+# Add the rigetti conda channel
+RUN conda config --add channels rigetti
 
-# copy over files from the repository into /home/forest-notebook
-COPY . /src/forest-notebook
+# install pyquil, jupyter_forest_extension, and qcs CLI
+RUN pip install \
+    pyquil==$pyquil_version \
+    pyquil[tutorials] \
+    tqdm \
+    && \
+    npm install -g \
+    qcs-cli \
+    && \
+    conda clean --all -f -y && \
+    npm cache clean --force && \
+    rm -rf /home/$NB_USER/.cache/yarn && \
+    rm -rf /home/$NB_USER/.node-gyp && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
 
-# transfer ownership of /home/binder and /src to binder user
-USER root
-RUN chown -R ${NB_UID} ${HOME}
-RUN chown -R ${NB_UID} /src
-USER ${NB_USER}
-
-# signal that we need to publish port 8888 to run the notebook server
-EXPOSE 8888
-
-# run the notebook server
-WORKDIR /src/pyquil
-CMD ["jupyter", "lab", "--ip=0.0.0.0"]
+# Run quilc and qvm in the background
+COPY forest-entrypoint.sh /usr/local/bin/forest-entrypoint.sh
+ENTRYPOINT ["tini", "-g", "--", "/usr/local/bin/forest-entrypoint.sh"]
+CMD ["start-notebook.sh"]
