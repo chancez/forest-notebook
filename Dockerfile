@@ -49,7 +49,22 @@ RUN pip install \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
 
+# Default to jupyter lab instead of jupyter notebook
+ENV JUPYTER_ENABLE_LAB true
+
 # Run quilc and qvm in the background
 COPY forest-entrypoint.sh /usr/local/bin/forest-entrypoint.sh
 ENTRYPOINT ["tini", "-g", "--", "/usr/local/bin/forest-entrypoint.sh"]
 CMD ["start-notebook.sh"]
+
+COPY examples /tmp/forest-sdk-examples
+COPY default.jupyterlab-workspace /tmp/default.jupyterlab-workspace
+RUN jupyter lab workspaces import /tmp/default.jupyterlab-workspace
+RUN cp -a /tmp/forest-sdk-examples /home/$NB_USER/forest-sdk-examples
+
+# Fix permissions on example files
+USER root
+RUN fix-permissions /home/$NB_USER && chown -R $NB_UID /home/$NB_USER/forest-sdk-examples /tmp/forest-sdk-examples /tmp/default.jupyterlab-workspace
+
+# Switch back to the notebook user
+USER $NB_UID
