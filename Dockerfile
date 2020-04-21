@@ -52,6 +52,7 @@ RUN pip install \
 
 # Default to jupyter lab instead of jupyter notebook
 ENV JUPYTER_ENABLE_LAB true
+ENV QUILC_ARGS -P
 
 # Run quilc and qvm in the background
 COPY forest-entrypoint.sh /usr/local/bin/forest-entrypoint.sh
