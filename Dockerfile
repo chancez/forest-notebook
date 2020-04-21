@@ -28,6 +28,9 @@ COPY --from=quilc /src/quilc/quilc /usr/local/bin/quilc
 # copy over the pre-built qvm binary from the second build stage
 COPY --from=qvm /src/qvm/qvm /usr/local/bin/qvm
 
+# configure default timezone to PST
+ENV TZ America/Los_Angeles
+
 # Switch back to the notebook user
 USER $NB_UID
 
