@@ -17,6 +17,7 @@ USER root
 # TeXLive et al for circuit diagram generation
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        git ssh \
         libblas-dev libffi-dev liblapack-dev libzmq3-dev \
         ghostscript imagemagick texlive-latex-base texlive-latex-extra \
     && \
