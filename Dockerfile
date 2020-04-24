@@ -13,15 +13,18 @@ ARG pyquil_version
 USER root
 
 # install system packages
+# git, ssh, jq, curl, rsync utilities
 # pyquil
 # TeXLive et al for circuit diagram generation
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        git ssh \
+        git ssh jq curl rsync \
         libblas-dev libffi-dev liblapack-dev libzmq3-dev \
         ghostscript imagemagick texlive-latex-base texlive-latex-extra \
     && \
     rm -rf /var/lib/apt/lists/*
+
+RUN curl -Lo /usr/local/bin/faq https://github.com/jzelinskie/faq/releases/download/0.0.6/faq-linux-amd64 && chmod +x /usr/local/bin/faq
 
 # copy over the pre-built quilc binary from the first build stage
 COPY --from=quilc /src/quilc/quilc /usr/local/bin/quilc
