@@ -1,7 +1,7 @@
 ARG quilc_version=1.16.1
 ARG qvm_version=1.15.3
 ARG pyquil_version=2.19.0
-ARG BASE_CONTAINER=jupyter/scipy-notebook
+ARG BASE_CONTAINER=jupyter/datascience-notebook
 
 # use multi-stage builds to independently pull dependency versions
 FROM rigetti/quilc:$quilc_version as quilc
