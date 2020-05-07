@@ -13,12 +13,12 @@ ARG pyquil_version
 USER root
 
 # install system packages
-# git, ssh, jq, curl, rsync utilities
+# git, ssh, jq, curl, rsync, tmux utilities
 # pyquil
 # TeXLive et al for circuit diagram generation
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        git ssh jq curl rsync \
+        git ssh jq curl rsync tmux \
         libblas-dev libffi-dev liblapack-dev libzmq3-dev \
         ghostscript imagemagick texlive-latex-base texlive-latex-extra \
     && \
